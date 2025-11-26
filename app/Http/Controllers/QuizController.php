@@ -9,31 +9,54 @@ class QuizController extends Controller
 {
     public function index()
     {
-        $quizes = Quiz::all();
+        $quizzes = Quiz::with('questions')->get();
 
-        return view('quizes_list', ['quizes' => $quizes]);
+        return view('quizes_list', ['quizzes' => $quizzes]);
     }
 
     public function show($id)
     {
-        $quiz = Quiz::with('questions')->findOrFail($id);
+        $quiz = Quiz::with('questions.answers')->findOrFail($id);
 
         return view('quiz_show', [
-            'quiz_title' => $quiz->title,
-            'questions' => $quiz->questions->pluck('question_text'),
-            'quiz_id' => $quiz->id,
+            'quiz' => $quiz,
         ]);
     }
 
     public function answer(Request $request, $id)
     {
         $request->validate([
-            'answer' => 'required|min:2',
+            'answers' => 'required|array',
+            'answers.*' => 'required|integer',
         ]);
 
+        $quiz = Quiz::with('questions.answers')->findOrFail($id);
+        $userAnswers = $request->answers;
+        $results = [];
+
+        foreach ($quiz->questions as $index => $question) {
+            $userAnswerId = $userAnswers[$index] ?? null;
+            $correctAnswer = $question->answers->where('is_correct', true)->first();
+
+            $results[] = [
+                'question' => $question,
+                'user_answer_id' => $userAnswerId,
+                'user_answer' => $userAnswerId ? $question->answers->find($userAnswerId) : null,
+                'correct_answer' => $correctAnswer,
+                'is_correct' => $userAnswerId && $correctAnswer && $userAnswerId == $correctAnswer->id,
+            ];
+        }
+
+        $correctCount = collect($results)->where('is_correct', true)->count();
+        $totalQuestions = $quiz->questions->count();
+        $percentage = $totalQuestions > 0 ? round(($correctCount / $totalQuestions) * 100) : 0;
+
         return view('answer_result', [
-            'answer' => $request->answer,
-            'quiz_id' => $id,
+            'quiz' => $quiz,
+            'results' => $results,
+            'correct_count' => $correctCount,
+            'total_questions' => $totalQuestions,
+            'percentage' => $percentage,
         ]);
     }
 }

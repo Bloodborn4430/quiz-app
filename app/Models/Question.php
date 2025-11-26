@@ -15,5 +15,14 @@ class Question extends Model
     {
         return $this->belongsTo(Quiz::class);
     }
-}
 
+    public function answers()
+    {
+        return $this->hasMany(Answer::class);
+    }
+
+    public function correctAnswer()
+    {
+        return $this->hasOne(Answer::class)->where('is_correct', true);
+    }
+}

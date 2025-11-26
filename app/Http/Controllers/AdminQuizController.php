@@ -7,59 +7,62 @@ use Illuminate\Http\Request;
 
 class AdminQuizController extends Controller
 {
-    // все квизы
     public function index()
     {
         $quizzes = Quiz::all();
         return view('admin.quizzes.index', compact('quizzes'));
     }
 
-    // форма добавления
     public function create()
     {
         return view('admin.quizzes.create');
     }
 
-    // сохранить новый
     public function store(Request $request)
     {
         $request->validate([
             'title' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
         ]);
 
-        Quiz::create(['title' => $request->title]);
+        Quiz::create([
+            'title' => $request->title,
+            'description' => $request->description,
+        ]);
 
-        return redirect()->route('quizzes.index')->with('success', 'Quiz added');
+        return redirect()->route('admin.quizzes.index')->with('success', 'Quiz created successfully');
     }
 
-    // показать один
     public function show(Quiz $quiz)
     {
+        $quiz->load('questions');
         return view('admin.quizzes.show', compact('quiz'));
     }
 
-    // форма редактирования
     public function edit(Quiz $quiz)
     {
+        $quiz->load('questions.answers');
         return view('admin.quizzes.edit', compact('quiz'));
     }
 
-    // обновить
     public function update(Request $request, Quiz $quiz)
     {
         $request->validate([
             'title' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
         ]);
 
-        $quiz->update(['title' => $request->title]);
+        $quiz->update([
+            'title' => $request->title,
+            'description' => $request->description,
+        ]);
 
-        return redirect()->route('quizzes.index')->with('success', 'Quiz updated');
+        return redirect()->route('admin.quizzes.edit', $quiz->id)->with('success', 'Quiz updated successfully');
     }
 
-    // удалить
     public function destroy(Quiz $quiz)
     {
         $quiz->delete();
-        return redirect()->route('quizzes.index')->with('success', 'Quiz deleted');
+        return redirect()->route('admin.quizzes.index')->with('success', 'Quiz deleted successfully');
     }
 }
