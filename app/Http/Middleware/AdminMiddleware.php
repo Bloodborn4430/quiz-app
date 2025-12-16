@@ -17,7 +17,7 @@ class AdminMiddleware
                 ->with('error', 'Login required to access the admin panel.');
         }
 
-        // Check if the user is an admin
+        
         if (!Auth::user()->is_admin) {
             return redirect('/')
                 ->with('error', 'You do not have access to the admin panel. Contact the system administrator.');
