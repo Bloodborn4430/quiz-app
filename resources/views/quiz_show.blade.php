@@ -44,6 +44,11 @@
         border: 1px solid #e1e5e9;
     }
 
+    .question-item.has-error {
+        border: 2px solid #dc3545;
+        background: #fff5f5;
+    }
+
     .question-number {
         font-size: 1.1rem;
         font-weight: 600;
@@ -201,13 +206,18 @@
 
         <div class="questions-container">
             @foreach($quiz->questions as $index => $question)
-            <div class="question-item">
+            <div class="question-item {{ $errors->has('answers.' . $index) ? 'has-error' : '' }}">
                 <div class="question-number">
                     Question {{ $index + 1 }} of {{ $quiz->questions->count() }}
                 </div>
                 <div class="question-text">
                     {{ $question->question_text }}
                 </div>
+                @if ($errors->has('answers.' . $index))
+                <div style="color: #dc3545; font-size: 0.9rem; margin-bottom: 0.5rem; padding: 0.5rem; background: #f8d7da; border-radius: 4px;">
+                    {{ $errors->first('answers.' . $index) }}
+                </div>
+                @endif
                 <div class="answers-list">
                     @foreach($question->answers as $answerIndex => $answer)
                     <label class="answer-option">

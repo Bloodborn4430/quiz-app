@@ -25,12 +25,42 @@ class QuizController extends Controller
 
     public function answer(Request $request, $id)
     {
-        $request->validate([
-            'answers' => 'required|array',
-            'answers.*' => 'required|integer',
+        $quiz = Quiz::with('questions.answers')->findOrFail($id);
+        
+        // Validate that quiz has questions
+        if ($quiz->questions->isEmpty()) {
+            return redirect()->route('quiz.show', $quiz->id)
+                ->with('error', 'This quiz has no questions.');
+        }
+
+        // Prepare validation rules dynamically based on quiz questions
+        $rules = [
+            'answers' => 'required|array|size:' . $quiz->questions->count(),
+        ];
+        
+        $validAnswerIds = [];
+        foreach ($quiz->questions as $index => $question) {
+            $questionAnswerIds = $question->answers->pluck('id')->toArray();
+            $validAnswerIds = array_merge($validAnswerIds, $questionAnswerIds);
+            
+            $rules['answers.' . $index] = [
+                'required',
+                'integer',
+                function ($attribute, $value, $fail) use ($question, $questionAnswerIds) {
+                    if (!in_array($value, $questionAnswerIds)) {
+                        $fail('The selected answer for question ' . ($question->id) . ' is invalid.');
+                    }
+                },
+            ];
+        }
+
+        $request->validate($rules, [
+            'answers.required' => 'Please answer all questions.',
+            'answers.size' => 'You must answer all ' . $quiz->questions->count() . ' questions.',
+            'answers.*.required' => 'Please select an answer for all questions.',
+            'answers.*.integer' => 'Invalid answer format.',
         ]);
 
-        $quiz = Quiz::with('questions.answers')->findOrFail($id);
         $userAnswers = $request->answers;
         $results = [];
 
